@@ -33,8 +33,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ravinadh/3tier-frontend:${{ github.sha }}
-            ravinadh/3tier-frontend:latest
+            haritejarv/3tier-frontend:${{ github.sha }}
+            haritejarv/3tier-frontend:latest
 
       - name: Build and Push Backend Image
         uses: docker/build-push-action@v5
@@ -42,8 +42,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ravinadh/3tier-backend:${{ github.sha }}
-            ravinadh/3tier-backend:latest
+            haritejarv/3tier-backend:${{ github.sha }}
+            haritejarv/3tier-backend:latest
 
       - name: Summary
         run: |
@@ -96,8 +96,8 @@ jobs:
             echo "Pulling latest images"
             echo "================================="
 
-            sudo docker pull ravinadh/3tier-frontend:latest
-            sudo docker pull ravinadh/3tier-backend:latest
+            sudo docker pull haritejarv/3tier-frontend:latest
+            sudo docker pull haritejarv/3tier-backend:latest
 
             echo "================================="
             echo "Stopping old containers"
