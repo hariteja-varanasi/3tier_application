@@ -1,0 +1,131 @@
+name: 3-Tier App CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+  # ============================================================
+  # BUILD AND PUSH DOCKER IMAGES
+  # ============================================================
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ravinadh/3tier-frontend:${{ github.sha }}
+            ravinadh/3tier-frontend:latest
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ravinadh/3tier-backend:${{ github.sha }}
+            ravinadh/3tier-backend:latest
+
+      - name: Summary
+        run: |
+          echo "Frontend pushed successfully"
+          echo "Backend pushed successfully"
+
+
+  # ============================================================
+  # DEPLOY TO EC2
+  # ============================================================
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,database/init.sql"
+          target: "/home/ubuntu/3tier_application"
+
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/ubuntu/3tier_application
+
+            echo "================================="
+            echo "Logging into DockerHub"
+            echo "================================="
+
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login \
+              -u "${{ secrets.DOCKERHUB_USERNAME }}" \
+              --password-stdin
+
+            echo "================================="
+            echo "Pulling latest images"
+            echo "================================="
+
+            sudo docker pull ravinadh/3tier-frontend:latest
+            sudo docker pull ravinadh/3tier-backend:latest
+
+            echo "================================="
+            echo "Stopping old containers"
+            echo "================================="
+
+            sudo docker compose down --remove-orphans || true
+
+            echo "================================="
+            echo "Starting new containers"
+            echo "================================="
+
+            sudo docker compose up -d
+
+            echo "================================="
+            echo "Waiting for database"
+            echo "================================="
+
+            sleep 20
+
+            echo "================================="
+            echo "Container Status"
+            echo "================================="
+
+            sudo docker compose ps
+
+            echo "================================="
+            echo "Deployment Complete"
+            echo "================================="
+
+            echo "Frontend : http://${{ secrets.EC2_HOST }}"
+            echo "Backend  : http://${{ secrets.EC2_HOST }}:5000/health"
