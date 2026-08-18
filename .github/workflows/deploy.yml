@@ -82,7 +82,7 @@ jobs:
           script: |
             set -e
 
-            cd /home/ubuntu/3tier_application
+            cd /home/ubuntu/practice/myrepo/3tier_application
 
             echo "================================="
             echo "Logging into DockerHub"
