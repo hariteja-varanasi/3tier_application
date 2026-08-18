@@ -71,7 +71,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.yml,database/init.sql"
-          target: "/home/ubuntu/3tier_application"
+          target: "/home/ubuntu/practice/myrepo/3tier_application"
 
       - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
