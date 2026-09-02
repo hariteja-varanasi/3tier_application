@@ -122,8 +122,10 @@ pipeline {
             // Only push from main -- avoids polluting the registry with feature-branch builds
             // and avoids anything but main being eligible for the production deploy step below.
             when {
-                branch 'main'
-                branch 'staging'
+                anyOf {
+                    branch 'main'
+                    branch 'staging'                    
+                }
             }
             steps {
                 script {
@@ -143,8 +145,10 @@ pipeline {
             // NOTE: this reuses the same EC2_HOST/container names as production for now --
             // point these at a separate dev host/containers before relying on this for real dev testing.
             when {
-                branch 'develop'
-                branch 'staging'
+                anyOf {
+                    branch 'main'
+                    branch 'staging'                    
+                }
             }
             steps {
                 echo "Deploying branch ${env.BRANCH_NAME} to DEV environment of ${EC2_HOST}"
